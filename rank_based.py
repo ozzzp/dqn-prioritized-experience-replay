@@ -47,7 +47,7 @@ class Experience(object):
         n_partitions = self.partition_num
         partition_num = 1
         # each part size
-        partition_size = math.floor(self.size / n_partitions)
+        partition_size = int(math.floor(self.size / n_partitions))
 
         for n in range(partition_size, self.size + 1, partition_size):
             if self.learn_start <= n <= self.priority_size:
@@ -163,8 +163,8 @@ class Experience(object):
         rank_list = []
         # sample from k segments
         for n in range(1, self.batch_size + 1):
-            index = random.randint(distribution['strata_ends'][n] + 1,
-                                   distribution['strata_ends'][n + 1])
+            index = random.randint(min(distribution['strata_ends'][n] + 1,  distribution['strata_ends'][n + 1]),
+                                   max(distribution['strata_ends'][n] + 1,  distribution['strata_ends'][n + 1]))
             rank_list.append(index)
 
         # beta, increase by global_step, max 1

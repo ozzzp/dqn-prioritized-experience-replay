@@ -23,9 +23,11 @@ class Experience(object):
         self.beta_zero = conf['beta_zero'] if 'beta_zero' in conf else 0.5
         self.batch_size = conf['batch_size'] if 'batch_size' in conf else 32
         self.learn_start = conf['learn_start'] if 'learn_start' in conf else 1000
+
+        # http://www.evernote.com/l/ACnDUVK3ShVEO7fDm38joUGNhDik3fFaB5o/
         self.total_steps = conf['steps'] if 'steps' in conf else 100000
         # partition number N, split total size to N part
-        self.partition_num = conf['partition_num'] if 'partition_num' in conf else 100
+        self.partition_num = conf['partition_num'] if 'partition_num' in conf else 5
 
         self.index = 0
         self.record_size = 0
@@ -155,7 +157,7 @@ class Experience(object):
             sys.stderr.write('Record size less than learn start! Sample failed\n')
             return False, False, False
 
-        dist_index = math.floor(self.record_size / self.size * self.partition_num)
+        dist_index = max(1.0, math.floor(self.record_size / self.size * self.partition_num))
         # issue 1 by @camigord
         partition_size = math.floor(self.size / self.partition_num)
         partition_max = dist_index * partition_size

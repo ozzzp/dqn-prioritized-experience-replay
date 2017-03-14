@@ -10,7 +10,7 @@ import rank_based
 def test():
     conf = {'size': 50,
             'learn_start': 10,
-            'partition_num': 5,
+            'partition_num': 1,
             'total_step': 100,
             'batch_size': 4}
     experience = rank_based.Experience(conf)
@@ -40,8 +40,8 @@ def test():
 
     # update delta to priority
     print('test update delta')
-    delta = [v for v in range(1, 5)]
-    experience.update_priority(e_id, delta)
+    delta = [v for v in range(0, 50)]
+    experience.update_priority(experience.priority_queue.get_e_id(), delta)
     print(experience.priority_queue)
     sample, w, e_id = experience.sample(51)
     print(sample)

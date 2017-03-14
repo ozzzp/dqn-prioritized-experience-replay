@@ -45,12 +45,13 @@ class BinaryHeap(object):
 
         for i in range(1, self.size + 1):
             now_level = math.floor(math.log(i, 2))
+            # log base 2 return 0, 1, 1, 2, 2, 2, 2, 3 ..
             if level != now_level:
                 to_string = to_string + ('\n' if level != -1 else '') \
-                            + str(max_level - now_level)
+                            + str(int(max_level - now_level))
                 level = now_level
 
-            to_string = to_string + '%.2f ' % self.priority_queue[i][1] + str(max_level - now_level)
+            to_string = to_string + ' {}:{} '.format(self.priority_queue[i][0], self.priority_queue[i][1])
 
         return to_string
 

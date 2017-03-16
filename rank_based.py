@@ -38,7 +38,7 @@ class Experience(object):
             map(lambda x: math.pow(x, -self.alpha), range(1, self.size + 1))
         )
         pdf_sum = math.fsum(pdf)
-        self.distribution = list(map(lambda x: x / pdf_sum, pdf))
+        self.power_law_distribution = list(map(lambda x: x / pdf_sum, pdf))
 
 
         self.beta_grad = (1 - self.beta_zero) / (self.total_steps - self.learn_start)
@@ -120,11 +120,11 @@ class Experience(object):
             return False, False, False
 
 
-        distribution = self.distribution
+        distribution = self.power_law_distribution
         rank_list = []
         # sample from k segments
-        for n in range(1, self.batch_size + 1):
-            index = random.randint(1, self.priority_queue.size + 1)
+        for n in range(self.batch_size):
+            index = random.randint(1, self.priority_queue.size)
             rank_list.append(index)
 
         # beta, increase by global_step, max 1
@@ -137,7 +137,11 @@ class Experience(object):
         w = np.divide(w, w_max)
         # rank list is priority id
         # convert to experience id
-        rank_e_id = self.priority_queue.priority_to_experience(rank_list)
+        rank_e_id = 0
+        try:
+            rank_e_id = self.priority_queue.priority_to_experience(rank_list)
+        except:
+            print 'a'
         # get experience id according rank_e_id
         experience = self.retrieve(rank_e_id)
         return experience, w, rank_e_id

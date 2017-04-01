@@ -21,17 +21,18 @@ class BinaryHeap(object):
             self.priority_queue = {}
             self.size = 0
             self.max_size = priority_size
-        else:
-            # not yet test
-            self.priority_queue = priority_init
-            self.size = len(self.priority_queue)
-            self.max_size = None or self.size
 
-            experience_list = list(map(lambda x: self.priority_queue[x], self.priority_queue))
-            self.p2e = utility.list_to_dict(experience_list)
-            self.e2p = utility.exchange_key_value(self.p2e)
-            for i in range(int(self.size / 2), -1, -1):
-                self.down_heap(i)
+    def reload(self):
+        # not yet test
+        self.priority_queue = priority_init
+        self.size = len(self.priority_queue)
+        self.max_size = None or self.size
+
+        experience_list = list(map(lambda x: self.priority_queue[x], self.priority_queue))
+        self.p2e = utility.list_to_dict(experience_list)
+        self.e2p = utility.exchange_key_value(self.p2e)
+        for i in range(int(self.size / 2), -1, -1):
+            self.down_heap(i)
 
     def __repr__(self):
         """

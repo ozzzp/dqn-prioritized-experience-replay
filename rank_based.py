@@ -14,25 +14,31 @@ import binary_heap
 
 class Experience(object):
 
-    def __init__(self, conf):
-        self.size = conf['size']
-        self.replace_flag = conf['replace_old'] if 'replace_old' in conf else True
+    def __init__(self, conf = None):
+        if not conf is None:
+            self.size = int(conf['size'])
+            self.replace_flag = conf['replace_old'] if 'replace_old' in conf else True
 
-        self.alpha = conf['alpha'] if 'alpha' in conf else 0.7
-        self.beta_zero = conf['beta_zero'] if 'beta_zero' in conf else 0.5
-        self.batch_size = conf['batch_size'] if 'batch_size' in conf else 32
-        self.learn_start = conf['learn_start'] if 'learn_start' in conf else 1000
+            self.alpha = conf['alpha'] if 'alpha' in conf else 0.7
+            self.beta_zero = conf['beta_zero'] if 'beta_zero' in conf else 0.5
+            self.batch_size = int(conf['batch_size'] if 'batch_size' in conf else 32)
+            self.learn_start = int(conf['learn_start'] if 'learn_start' in conf else 1000)
 
-        # http://www.evernote.com/l/ACnDUVK3ShVEO7fDm38joUGNhDik3fFaB5o/
-        self.total_steps = conf['steps'] if 'steps' in conf else 100000
+            # http://www.evernote.com/l/ACnDUVK3ShVEO7fDm38joUGNhDik3fFaB5o/
+            self.total_steps = int(conf['total_steps'] if 'total_steps' in conf else 100000)
 
-        self.index = 0
-        self.record_size = 0
-        self.isFull = False
+            self.index = 0
+            self.record_size = 0
+            self.isFull = False
 
-        self._experience = {}
-        self.priority_queue = binary_heap.BinaryHeap(self.size)
+            self._experience = {}
+            self.priority_queue = binary_heap.BinaryHeap(self.size)
 
+            self.build_distribution()
+
+
+
+    def build_distribution(self):
         # P(i) = (rank i) ^ (-alpha) / sum ((rank i) ^ (-alpha))
         pdf = list(
             map(lambda x: math.pow(x, -self.alpha), range(1, self.size + 1))
@@ -40,8 +46,41 @@ class Experience(object):
         pdf_sum = math.fsum(pdf)
         self.power_law_distribution = list(map(lambda x: x / pdf_sum, pdf))
 
-
         self.beta_grad = (1 - self.beta_zero) / (self.total_steps - self.learn_start)
+
+    def save(self, filename):
+        data = np.array([
+            self.size,
+            self.replace_flag,
+            self.alpha,
+            self.beta_zero,
+            self.batch_size,
+            self.learn_start,
+            self.total_steps,
+            self.index,
+            self.record_size,
+            self.isFull,
+            self._experience,
+            self.priority_queue.priority_queue
+        ])
+        np.save(filename, data)
+
+    def load(self, filename):
+        data = np.load(filename)
+        self.size,
+        self.replace_flag,
+        self.alpha,
+        self.beta_zero,
+        self.batch_size,
+        self.learn_start,
+        self.total_steps,
+        self.index,
+        self.record_size,
+        self.isFull,
+        self._experience,
+        self.priority_queue.priority_queue = data
+        self.priority_queue.reload()
+
 
     def fix_index(self):
         """
@@ -106,6 +145,7 @@ class Experience(object):
         """
         for i in range(0, len(indices)):
             self.priority_queue.update(math.fabs(delta[i]), indices[i])
+        self.rebalance()
 
     def sample(self, global_step):
         """
@@ -115,10 +155,6 @@ class Experience(object):
         :return: w, list, weights
         :return: rank_e_id, list, samples id, used for update priority
         """
-        if self.record_size < self.learn_start:
-            sys.stderr.write('Record size less than learn start! Sample failed\n')
-            return False, False, False
-
 
         distribution = self.power_law_distribution
         rank_list = []

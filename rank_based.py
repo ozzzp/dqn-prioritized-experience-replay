@@ -145,7 +145,6 @@ class Experience(object):
         """
         for i in range(0, len(indices)):
             self.priority_queue.update(math.fabs(delta[i]), indices[i])
-        self.rebalance()
 
     def sample(self, global_step):
         """

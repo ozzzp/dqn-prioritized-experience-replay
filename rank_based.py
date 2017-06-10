@@ -61,25 +61,31 @@ class Experience(object):
             self.record_size,
             self.isFull,
             self._experience,
-            self.priority_queue.priority_queue
+            self.priority_queue.priority_queue,
+            self.priority_queue.p2e,
+            self.priority_queue.e2p,
+            self.priority_queue.size
         ])
         np.save(filename, data)
 
     def load(self, filename):
         data = np.load(filename)
-        self.size,
-        self.replace_flag,
-        self.alpha,
-        self.beta_zero,
-        self.batch_size,
-        self.learn_start,
-        self.total_steps,
-        self.index,
-        self.record_size,
-        self.isFull,
-        self._experience,
-        self.priority_queue.priority_queue = data
-        self.priority_queue.reload()
+        self.size, \
+        self.replace_flag, \
+        self.alpha, \
+        self.beta_zero, \
+        self.batch_size, \
+        self.learn_start, \
+        self.total_steps, \
+        self.index, \
+        self.record_size, \
+        self.isFull, \
+        self._experience, \
+        self.priority_queue.priority_queue, \
+        self.priority_queue.p2e,\
+        self.priority_queue.e2p, \
+        self.priority_queue.size = data
+        self.priority_queue.balance_tree()
 
 
     def fix_index(self):

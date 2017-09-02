@@ -4,6 +4,11 @@
 # e-mail: stmayue@gmail.com
 # description: 
 
+from __future__ import division
+from __future__ import print_function
+from __future__ import unicode_literals
+from __future__ import absolute_import
+
 import sys
 import math
 import random
@@ -11,21 +16,33 @@ import numpy as np
 
 import binary_heap
 
+class BetaSchedule(object):
+    def __init__(self, conf=None):
+        self.batch_size = int(conf['batch_size'] if 'batch_size' in conf else 32)
+
+        self.beta_zero = conf['beta_zero'] if 'beta_zero' in conf else 0.5
+        self.learn_start = int(conf['learn_start'] if 'learn_start' in conf else 1000)
+        # http://www.evernote.com/l/ACnDUVK3ShVEO7fDm38joUGNhDik3fFaB5o/
+        self.total_steps = int(conf['total_steps'] if 'total_steps' in conf else 100000)
+        self.beta_grad = (1 - self.beta_zero) / (self.total_steps - self.learn_start)
+
+    def get_beta(self, global_step):
+        # beta, increase by global_step, max 1
+        beta = min(self.beta_zero + (global_step - self.learn_start - 1) * self.beta_grad, 1)
+        return beta, self.batch_size
+
 
 class Experience(object):
 
     def __init__(self, conf = None):
+        self.beta_sched = BetaSchedule(conf)
+        print("Initializing rank_based.Experience()")
+        print("conf={}".format(str(conf)))
         if not conf is None:
             self.size = int(conf['size'])
             self.replace_flag = conf['replace_old'] if 'replace_old' in conf else True
 
             self.alpha = conf['alpha'] if 'alpha' in conf else 0.7
-            self.beta_zero = conf['beta_zero'] if 'beta_zero' in conf else 0.5
-            self.batch_size = int(conf['batch_size'] if 'batch_size' in conf else 32)
-            self.learn_start = int(conf['learn_start'] if 'learn_start' in conf else 1000)
-
-            # http://www.evernote.com/l/ACnDUVK3ShVEO7fDm38joUGNhDik3fFaB5o/
-            self.total_steps = int(conf['total_steps'] if 'total_steps' in conf else 100000)
 
             self.index = 0
             self.record_size = 0
@@ -46,17 +63,16 @@ class Experience(object):
         pdf_sum = math.fsum(pdf)
         self.power_law_distribution = list(map(lambda x: x / pdf_sum, pdf))
 
-        self.beta_grad = (1 - self.beta_zero) / (self.total_steps - self.learn_start)
 
     def save(self, filename):
         data = np.array([
             self.size,
             self.replace_flag,
             self.alpha,
-            self.beta_zero,
-            self.batch_size,
-            self.learn_start,
-            self.total_steps,
+            self.beta_sched.beta_zero,
+            self.beta_sched.batch_size,
+            self.beta_sched.learn_start,
+            self.beta_sched.total_steps,
             self.index,
             self.record_size,
             self.isFull,
@@ -73,10 +89,10 @@ class Experience(object):
         self.size, \
         self.replace_flag, \
         self.alpha, \
-        self.beta_zero, \
-        self.batch_size, \
-        self.learn_start, \
-        self.total_steps, \
+        self.beta_sched.beta_zero, \
+        self.beta_sched.batch_size, \
+        self.beta_sched.learn_start, \
+        self.beta_sched.total_steps, \
         self.index, \
         self.record_size, \
         self.isFull, \
@@ -152,10 +168,14 @@ class Experience(object):
         for i in range(0, len(indices)):
             self.priority_queue.update(math.fabs(delta[i]), indices[i])
 
-    def sample(self, global_step):
+    def sample(self, global_step, batch_size=None):
+        beta, batch_size = self.beta_sched.get_beta(global_step)
+        return self.select(beta, batch_size=batch_size)
+
+    def select(self, beta, batch_size):
         """
         sample a mini batch from experience replay
-        :param global_step: now training step
+        :param beta
         :return: experience, list, samples
         :return: w, list, weights
         :return: rank_e_id, list, samples id, used for update priority
@@ -164,12 +184,10 @@ class Experience(object):
         distribution = self.power_law_distribution
         rank_list = []
         # sample from k segments
-        for n in range(self.batch_size):
+        for n in range(batch_size):
             index = random.randint(1, self.priority_queue.size)
             rank_list.append(index)
 
-        # beta, increase by global_step, max 1
-        beta = min(self.beta_zero + (global_step - self.learn_start - 1) * self.beta_grad, 1)
         # find all alpha pow, notice that pdf is a list, start from 0
         alpha_pow = [distribution[v - 1] for v in rank_list]
         # w = (N * P(i)) ^ (-beta) / max w
@@ -182,7 +200,7 @@ class Experience(object):
         try:
             rank_e_id = self.priority_queue.priority_to_experience(rank_list)
         except:
-            print 'a'
+            print('a')
         # get experience id according rank_e_id
         experience = self.retrieve(rank_e_id)
         return experience, w, rank_e_id

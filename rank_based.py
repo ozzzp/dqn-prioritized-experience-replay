@@ -16,6 +16,7 @@ import numpy as np
 
 import binary_heap
 
+
 class BetaSchedule(object):
     def __init__(self, conf=None):
         self.batch_size = int(conf['batch_size'] if 'batch_size' in conf else 32)

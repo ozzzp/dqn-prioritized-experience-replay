@@ -138,7 +138,7 @@ class Experience(object):
             # add to priority queue
             priority = self.priority_queue.get_max_priority()
             self.priority_queue.update(priority, insert_index)
-            return True
+            return insert_index
         else:
             sys.stderr.write('Insert failed\n')
             return False
@@ -182,11 +182,10 @@ class Experience(object):
         """
 
         distribution = self.power_law_distribution
-        rank_list = []
         # sample from k segments
-        for n in range(batch_size):
-            index = random.randint(1, self.priority_queue.size)
-            rank_list.append(index)
+        if batch_size > self.priority_queue.size:
+            return False, False, False
+        rank_list = random.sample(list(range(1, self.priority_queue.size + 1)), batch_size)
 
         # find all alpha pow, notice that pdf is a list, start from 0
         alpha_pow = [distribution[v - 1] for v in rank_list]
